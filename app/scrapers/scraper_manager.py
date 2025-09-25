@@ -2,6 +2,17 @@
 # 8. Scraper Manager (app/scrapers/scraper_manager.py)
 # =============================================================================
 
+from typing import List
+import logging
+
+from .govbd_scraper import GovBDScraper
+from app.parsers.job_parser import JobParser, ParsedJob
+from app.db.database import db_manager
+from app.db.models import Job
+
+logger = logging.getLogger(__name__)
+
+
 class ScraperManager:
     def __init__(self):
         self.scrapers = [

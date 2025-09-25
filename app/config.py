@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/bd_jobs"
+    DATABASE_URL: str = "postgresql+asyncpg://next:next123@localhost:5432/bd_jobs"
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # API
@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     SCRAPER_TIMEOUT: int = 30
     SCRAPER_RETRIES: int = 3
     USE_PROXY: bool = False
-    PROXY_LIST: List[str] = []
     
     # Email
     SMTP_SERVER: str = "smtp.gmail.com"

@@ -5,9 +5,11 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db.database import db_manager
-from app.db.models import User, Job
+from app.db.models import Base, User, Job
+from app.config import settings
 from sqlalchemy import text
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -17,22 +19,30 @@ def create_database():
     # Create database tables
     try:
         logger.info("Creating database tables...")
-        db_manager.create_tables()
+        # Ensure we use a synchronous driver for setup (strip async driver suffix)
+        sync_db_url = settings.DATABASE_URL.replace('+asyncpg', '')
+        engine = create_engine(sync_db_url, pool_size=10, max_overflow=20)
+
+        # Create tables using the sync engine
+        Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
-        
-        # Create indexes for performance
-        with db_manager.get_session() as db:
-            # Additional custom indexes
-            db.execute(text("""
+
+        # Create indexes for performance (run outside transaction where necessary)
+        conn = engine.connect()
+        try:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(text("""
                 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_jobs_full_text 
                 ON jobs USING gin(to_tsvector('english', title || ' ' || description));
             """))
-            
-            db.execute(text("""
+
+            conn.execute(text("""
                 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_jobs_deadline_active 
                 ON jobs (deadline_date, is_active) WHERE is_active = true;
             """))
-            
+        finally:
+            conn.close()
+
         logger.info("Additional indexes created")
     except Exception as e:
         logger.error(f"Database setup failed: {e}")
@@ -41,7 +51,12 @@ def create_database():
 def create_sample_data():
     # reate sample data for testing
     try:
-        with db_manager.get_session() as db:
+        # Use a local synchronous session for inserting sample data
+        sync_db_url = settings.DATABASE_URL.replace('+asyncpg', '')
+        engine = create_engine(sync_db_url)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+        with SessionLocal() as db:
             # Create sample user
             sample_user = User(
                 user_id="sample_user_123",

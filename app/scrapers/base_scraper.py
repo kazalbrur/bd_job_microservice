@@ -8,6 +8,12 @@ from playwright.async_api import async_playwright, Browser, Page
 import aiohttp
 from typing import Dict, List, Optional
 import random
+import logging
+
+from app.parsers.job_parser import JobParser
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 class BaseScraper(ABC):
     def __init__(self, name: str):
@@ -25,9 +31,19 @@ class BaseScraper(ABC):
     
     async def _setup(self):
         """Setup browser and HTTP session"""
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True)
-        
+        # Try to start Playwright and launch a browser. If Playwright or the
+        # browsers are not installed, log a warning and continue with only the
+        # aiohttp session as a fallback. This allows running scripts in
+        # environments where Playwright wasn't set up yet.
+        try:
+            self.playwright = await async_playwright().start()
+            self.browser = await self.playwright.chromium.launch(headless=True)
+        except Exception as e:
+            logger.warning(f"Playwright/browser startup failed, falling back to HTTP session: {e}")
+            self.playwright = None
+            self.browser = None
+
+        # Always create an aiohttp session for HTTP based fallback scraping
         self.session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=settings.SCRAPER_TIMEOUT),
             headers={'User-Agent': self._get_random_user_agent()}

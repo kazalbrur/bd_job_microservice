@@ -53,8 +53,19 @@ A production-ready microservice for scraping, processing, and serving Bangladesh
    ```
 
 4. **Install Playwright browsers**
+   Playwright is required for browser-driven scrapers. You can install the
+   browsers directly with the Playwright CLI or use the convenience helper
+   included in this repo.
+
+   Direct (recommended):
    ```bash
    playwright install chromium
+   ```
+
+   Or via the helper script (runs `python -m playwright install` using
+   your current virtualenv):
+   ```bash
+   python scripts/install_playwright.py --browsers chromium --yes --with-deps
    ```
 
 5. **Setup environment variables**
@@ -363,7 +374,11 @@ Customizable HTML email templates with job details and direct application links.
 
 1. **Playwright Installation**
    ```bash
+   # If Playwright reports missing browsers, run either:
    playwright install --with-deps chromium
+
+   # or the helper (non-interactive):
+   python scripts/install_playwright.py --browsers chromium --yes --with-deps
    ```
 
 2. **Database Connection Issues**

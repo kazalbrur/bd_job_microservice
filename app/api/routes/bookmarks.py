@@ -2,6 +2,19 @@
 # 11. Bookmark API Routes (app/api/routes/bookmarks.py)
 # =============================================================================
 
+from fastapi import APIRouter, Depends, Request, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from datetime import datetime
+from pydantic import BaseModel
+
+from app.api.routes.jobs import JobResponse
+
+from app.main import limiter
+from app.db.database import db_manager
+from app.cache.redis_cache import cache
+from app.db.models import Job, User, Bookmark
+
 bookmark_router = APIRouter(prefix="/bookmarks", tags=["bookmarks"])
 
 class BookmarkRequest(BaseModel):

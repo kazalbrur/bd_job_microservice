@@ -9,6 +9,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
+from app.config import settings
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -37,3 +38,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Include API routers
+from app.api.routes import jobs_router, bookmark_router, alert_router, export_router
+
+app.include_router(jobs_router)
+app.include_router(bookmark_router)
+app.include_router(alert_router)
+app.include_router(export_router)

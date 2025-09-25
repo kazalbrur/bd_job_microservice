@@ -7,6 +7,11 @@ import json
 from typing import Any, Optional
 import pickle
 from datetime import timedelta
+import logging
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 class RedisCache:
     def __init__(self, redis_url: str):
@@ -45,5 +50,30 @@ class RedisCache:
             logger.error(f"Redis exists error: {e}")
             return False
 
-# Initialize cache
-cache = RedisCache(settings.REDIS_URL)
+# Initialize cache if REDIS_URL is configured, otherwise create a no-op cache
+try:
+    if settings.REDIS_URL:
+        cache = RedisCache(settings.REDIS_URL)
+    else:
+        raise RuntimeError("No REDIS_URL configured")
+except Exception:
+    logger.warning("Redis not configured or failed to initialize; using in-memory fallback")
+
+    class _InMemoryCache(RedisCache):
+        def __init__(self):
+            self._store = {}
+
+        async def get(self, key: str):
+            return self._store.get(key)
+
+        async def set(self, key: str, value: Any, ttl: int = 3600):
+            self._store[key] = value
+
+        async def delete(self, key: str):
+            if key in self._store:
+                del self._store[key]
+
+        async def exists(self, key: str) -> bool:
+            return key in self._store
+
+    cache = _InMemoryCache()

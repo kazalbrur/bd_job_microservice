@@ -2,12 +2,16 @@
 # 10. Job API Routes (app/api/routes/jobs.py)
 # =============================================================================
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from app.main import limiter
+from app.db.database import db_manager
+from app.cache.redis_cache import cache
+from app.db.models import Job
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
